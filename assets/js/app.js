@@ -1,10 +1,16 @@
 const app = angular.module('agentDeskApp', ['ngRoute']);
 
+// Automatically route API calls to InfinityFree when running on GitHub Pages
+const API_BASE_URL = (window.location.hostname.indexOf('github.io') !== -1)
+    ? 'https://agentdesk-chug.free.je/'
+    : '';
+
 // 1. Standalone State Container
 app.value('SessionState', {
     isAuthenticated: false,
     checked: false,
     csrfToken: '',
+    sessionToken: localStorage.getItem('agentdesk_session_token') || '',
     agent: null
 });
 
@@ -17,8 +23,12 @@ app.factory('AuthService', function($http, SessionState) {
                 SessionState.checked = true;
                 if (res.data && res.data.authenticated) {
                     SessionState.isAuthenticated = true;
-                    SessionState.csrfToken = res.data.csrf_token;
+                    SessionState.csrfToken = res.data.csrf_token || '';
                     SessionState.agent = res.data.agent;
+                    if (res.data.session_token) {
+                        SessionState.sessionToken = res.data.session_token;
+                        localStorage.setItem('agentdesk_session_token', res.data.session_token);
+                    }
                 } else {
                     SessionState.isAuthenticated = false;
                     SessionState.csrfToken = '';
@@ -34,27 +44,66 @@ app.factory('AuthService', function($http, SessionState) {
         setLoginData: function(data) {
             SessionState.isAuthenticated = true;
             SessionState.checked = true;
-            SessionState.csrfToken = data.csrf_token;
+            SessionState.csrfToken = data.csrf_token || '';
             SessionState.agent = data.agent;
+            if (data.session_token) {
+                SessionState.sessionToken = data.session_token;
+                localStorage.setItem('agentdesk_session_token', data.session_token);
+            }
         },
         clearSession: function() {
             SessionState.isAuthenticated = false;
             SessionState.csrfToken = '';
+            SessionState.sessionToken = '';
             SessionState.agent = null;
+            localStorage.removeItem('agentdesk_session_token');
         }
     };
 });
 
-// 3. HTTP Interceptor
+// 3. HTTP Interceptor (Routes api/ to InfinityFree + handles InfinityFree anti-bot cookie)
 app.factory('SecurityInterceptor', function($q, $location, SessionState) {
     return {
         request: function(config) {
+            if (config.url && config.url.indexOf('api/') === 0) {
+                config.url = API_BASE_URL + config.url;
+                config.withCredentials = true;
+            }
             if (SessionState.csrfToken) {
                 config.headers['X-CSRF-Token'] = SessionState.csrfToken;
             }
+            if (SessionState.sessionToken) {
+                config.headers['Authorization'] = 'Bearer ' + SessionState.sessionToken;
+            }
             return config;
         },
+        response: function(res) {
+            if (
+                res.config &&
+                res.config.url &&
+                res.config.url.indexOf('agentdesk-chug.free.je/api/') !== -1 &&
+                typeof res.data === 'string' &&
+                res.data.indexOf('aes.js') !== -1
+            ) {
+                window.location.href = 'https://agentdesk-chug.free.je/?return_to=' + encodeURIComponent(window.location.href);
+                return $q.reject(res);
+            }
+            return res;
+        },
         responseError: function(rejection) {
+            if (
+                rejection &&
+                (rejection.status === -1 || rejection.status === 0) &&
+                rejection.config &&
+                rejection.config.url &&
+                rejection.config.url.indexOf('agentdesk-chug.free.je/api/') !== -1 &&
+                !sessionStorage.getItem('if_unlocked')
+            ) {
+                sessionStorage.setItem('if_unlocked', '1');
+                window.location.href = 'https://agentdesk-chug.free.je/?return_to=' + encodeURIComponent(window.location.href);
+                return $q.reject(rejection);
+            }
+
             if (rejection.status === 401 && $location.path() !== '/login') {
                 SessionState.isAuthenticated = false;
                 SessionState.csrfToken = '';
