@@ -1,0 +1,245 @@
+<div class="container-xxl px-0">
+    <!-- Subtle 35-Day Advance Excel Import Notice -->
+    <div class="alert-strip-subtle p-3 d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4" ng-if="data.upload_alert.show">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-info-circle-fill fs-5 me-3 text-warning-emphasis"></i>
+            <div>
+                <div class="fw-semibold small">Monthly Renewal Sheet Due ({{ data.upload_alert.next_month_label }})</div>
+                <div class="small opacity-75">{{ data.upload_alert.message }}</div>
+            </div>
+        </div>
+        <a href="#!/import" class="btn btn-sm btn-outline-dark fw-semibold">
+            <i class="bi bi-upload me-1"></i> Import Renewal Excel
+        </a>
+    </div>
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h4 class="fw-bold mb-1" style="letter-spacing: -0.02em;">Agent Dashboard</h4>
+            <p class="text-muted small mb-0">Daily summary of client birthdays and policy renewals</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-outline-secondary btn-sm" ng-if="notificationPermission === 'default'" ng-click="requestNotificationPermission()">
+                <i class="bi bi-bell me-1"></i> Enable Alerts
+            </button>
+            <a href="#!/customers" class="btn btn-outline-secondary btn-sm bg-white">
+                <i class="bi bi-people me-1"></i> Customers
+            </a>
+            <a href="#!/import" class="btn btn-navy btn-sm">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i> Import Data
+            </a>
+        </div>
+    </div>
+
+    <!-- Unified KPI Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center p-3">
+                    <div class="stat-icon me-3">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Total Customers</div>
+                        <h3 class="fw-bold mb-0">{{ data.total_customers }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center p-3">
+                    <div class="stat-icon me-3">
+                        <i class="bi bi-cake2"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Birthdays (Today / Tomorrow)</div>
+                        <h3 class="fw-bold mb-0">{{ data.todays_birthdays.length + data.tomorrow_birthdays.length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center p-3">
+                    <div class="stat-icon me-3">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Due Renewals (30/15/7/1d)</div>
+                        <h3 class="fw-bold mb-0">{{ data.due_renewals.length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center p-3">
+                    <div class="stat-icon me-3">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Pending This Month</div>
+                        <h3 class="fw-bold mb-0">{{ data.all_pending_renewals.length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Two-Column Content -->
+    <div class="row g-4">
+        <!-- Left Column: Policy Renewals -->
+        <div class="col-12 col-lg-7">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">Policy Renewal Reminders Due Today</h6>
+                    <span class="badge pill-neutral">{{ data.due_renewals.length }} Due</span>
+                </div>
+                <div class="card-body p-0">
+                    <div ng-if="data.due_renewals.length === 0" class="p-4 text-muted small">
+                        No policies hit the 30-day, 15-day, 7-day, or 1-day reminder mark today.
+                    </div>
+                    <div class="table-responsive" ng-if="data.due_renewals.length > 0">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Client & Policy</th>
+                                    <th>Due Date</th>
+                                    <th>Timeline</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="r in data.due_renewals">
+                                    <td>
+                                        <div class="fw-semibold">{{ r.customer_name }}</div>
+                                        <div class="small text-muted">{{ r.policy_number }} &bull; {{ r.mobile_number }}</div>
+                                    </td>
+                                    <td class="small">{{ r.renewal_date }}</td>
+                                    <td>
+                                        <span class="badge"
+                                              ng-class="r.days_until <= 7 ? 'pill-urgent' : 'pill-neutral'">
+                                            {{ r.days_until }} day(s) left
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a ng-href="{{ getRenewalWhatsAppUrl(r) }}" target="_blank" class="btn btn-sm btn-whatsapp-soft">
+                                            <i class="bi bi-whatsapp me-1"></i> Remind
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">All Unrenewed Policies (Next 30 Days)</h6>
+                    <span class="small text-muted">Type <code>POLICY_NO done</code> in Assistant to clear</span>
+                </div>
+                <div class="card-body p-0">
+                    <div ng-if="data.all_pending_renewals.length === 0" class="p-4 text-muted small">
+                        No pending renewals for the next 30 days.
+                    </div>
+                    <div class="table-responsive" ng-if="data.all_pending_renewals.length > 0">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Policy No</th>
+                                    <th>Customer</th>
+                                    <th>Renewal Date</th>
+                                    <th>Remaining</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-repeat="p in data.all_pending_renewals">
+                                    <td class="fw-semibold">{{ p.policy_number }}</td>
+                                    <td>{{ p.customer_name }} <span class="text-muted small">({{ p.mobile_number }})</span></td>
+                                    <td class="small">{{ p.renewal_date }}</td>
+                                    <td><span class="badge pill-neutral">{{ p.days_until }}d</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Birthdays & Recent Clients -->
+        <div class="col-12 col-lg-5">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">Today's Birthdays</h6>
+                    <span class="small text-muted">{{ data.today_date }}</span>
+                </div>
+                <div class="card-body">
+                    <div ng-if="data.todays_birthdays.length === 0" class="text-muted small">
+                        No customer birthdays today.
+                    </div>
+                    <div class="p-3 border rounded-3 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2" ng-repeat="b in data.todays_birthdays">
+                        <div>
+                            <div class="fw-semibold">{{ b.full_name }} <span class="badge pill-amber ms-1">Turns {{ b.turning_age }}</span></div>
+                            <div class="small text-muted">{{ b.mobile_number }}</div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a ng-href="{{ getBirthdayWhatsAppUrl(b, true) }}" target="_blank" class="btn btn-sm btn-whatsapp-soft">
+                                <i class="bi bi-whatsapp me-1"></i> Wish
+                            </a>
+                            <a href="tel:{{ b.mobile_number }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-telephone"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="fw-bold mb-0">Tomorrow's Birthdays (1-Day Advance)</h6>
+                </div>
+                <div class="card-body">
+                    <div ng-if="data.tomorrow_birthdays.length === 0" class="text-muted small">
+                        No customer birthdays tomorrow.
+                    </div>
+                    <div class="p-3 border rounded-3 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2" ng-repeat="t in data.tomorrow_birthdays">
+                        <div>
+                            <div class="fw-semibold">{{ t.full_name }}</div>
+                            <div class="small text-muted">{{ t.mobile_number }} &bull; {{ t.next_birthday }}</div>
+                        </div>
+                        <a ng-href="{{ getBirthdayWhatsAppUrl(t, false) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-whatsapp me-1"></i> Pre-Wish
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">Recently Added Clients</h6>
+                    <a href="#!/customers" class="small text-decoration-none fw-semibold" style="color: var(--brand-navy);">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div ng-if="data.recent_customers.length === 0" class="p-4 text-muted small">
+                        No customers added yet.
+                    </div>
+                    <ul class="list-group list-group-flush" ng-if="data.recent_customers.length > 0">
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-4 py-3" ng-repeat="r in data.recent_customers">
+                            <div>
+                                <div class="fw-semibold small">{{ r.full_name }}</div>
+                                <div class="text-muted" style="font-size: 0.78rem;">{{ r.mobile_number }} &bull; DOB: {{ r.dob }}</div>
+                            </div>
+                            <span class="badge pill-neutral">New</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

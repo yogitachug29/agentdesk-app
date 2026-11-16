@@ -1,0 +1,54 @@
+<div class="container-fluid d-flex align-items-center justify-content-center py-4"
+     style="position: fixed; inset: 0; background-color: #ffffff; overflow-y: auto;">
+    <div class="row w-100 align-items-center justify-content-center g-4" style="max-width: 1050px;">
+
+        <!-- Left Side: Star Health Logo (Blends Seamlessly into #FFFFFF Background) -->
+        <div class="col-12 col-md-6 text-center px-4">
+            <img src="assets/images/star_health_bg.jpg"
+                 alt="Star Health Insurance"
+                 class="img-fluid"
+                 style="max-width: 420px; width: 100%; opacity: 1;">
+        </div>
+
+        <!-- Right Side: Login Card in Star Health Navy (#1A3673) -->
+        <div class="col-12 col-md-6 d-flex justify-content-center justify-content-md-end">
+            <div class="card shadow-sm rounded-4 p-4 p-md-5 w-100"
+                 style="max-width: 420px; background: #ffffff; border: 1px solid #e2e8f0;">
+                <div class="text-center mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle text-white mb-3"
+                         style="width: 56px; height: 56px; background-color: #1A3673;">
+                        <i class="bi bi-shield-check fs-3"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1" style="color: #1A3673;">AgentDesk</h3>
+                    <p class="text-muted small mb-0">Personal &amp; Caring Client CRM</p>
+                </div>
+
+                <div class="alert alert-danger py-2 small" ng-if="error">{{ error }}</div>
+
+                <form ng-submit="login()">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small" style="color: #1A3673;">Username</label>
+                        <input type="text" class="form-control form-control-lg fs-6"
+                               placeholder="Enter username"
+                               ng-model="credentials.username" required autofocus>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold small" style="color: #1A3673;">Password</label>
+                        <input type="password" class="form-control form-control-lg fs-6"
+                               placeholder="Enter password"
+                               ng-model="credentials.password" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-lg w-100 fs-6 fw-semibold text-white"
+                            style="background-color: #1A3673; border-color: #1A3673;"
+                            ng-disabled="loading">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>
+                        {{ loading ? 'Signing In...' : 'Sign In' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>

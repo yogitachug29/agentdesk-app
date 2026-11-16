@@ -1,0 +1,173 @@
+<div class="container-xxl px-0">
+    <div class="mb-4">
+        <h4 class="fw-bold mb-0">Dual Excel Data Import</h4>
+        <p class="text-muted small mb-0">Upload your Master Birthday Sheet or Monthly Policy Renewals Sheet for automated validation & deduplication</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-12 col-lg-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-upload me-2 text-primary"></i>Select Import Sheet Type</h6>
+
+                    <!-- Sheet Type Selector -->
+                    <div class="btn-group w-100 mb-3" role="group">
+                        <input type="radio" class="btn-check" name="importType" id="typeBirthdays" value="birthdays" ng-model="importType" checked>
+                        <label class="btn btn-outline-primary fw-semibold" for="typeBirthdays">
+                            <i class="bi bi-cake2 me-1"></i> Birthdays Sheet
+                        </label>
+
+                        <input type="radio" class="btn-check" name="importType" id="typeRenewals" value="renewals" ng-model="importType">
+                        <label class="btn btn-outline-success fw-semibold" for="typeRenewals">
+                            <i class="bi bi-shield-check me-1"></i> Monthly Renewals
+                        </label>
+                    </div>
+
+                    <!-- Dynamic Column Instructions -->
+                    <div class="alert alert-light border small mb-3" ng-if="importType === 'birthdays'">
+                        <strong>Birthday Master Excel Columns:</strong><br>
+                        Required: <code>Name</code>, <code>Mobile Number</code>, <code>DOB</code><br>
+                        Optional: <code>Email</code>, <code>Notes</code>
+                    </div>
+
+                    <div class="alert alert-light border small mb-3" ng-if="importType === 'renewals'">
+                        <strong>Monthly Renewals Excel Columns:</strong><br>
+                        Required: <code>Customer Name</code>, <code>Mobile Number</code>, <code>Policy Number</code>, <code>Renewal Date</code><br>
+                        Optional: <code>Policy Type</code>, <code>Premium Amount</code>
+                    </div>
+
+                    <!-- Target Renewal Month (only for renewals) -->
+                    <div class="mb-3" ng-if="importType === 'renewals'">
+                        <label class="form-label small fw-semibold">Renewal Cycle Month</label>
+                        <input type="month" class="form-control" ng-model="targetMonth">
+                        <div class="form-text">Used to trigger your 35-day advance upload reminder for the following month.</div>
+                    </div>
+
+                    <div class="alert alert-danger small" ng-if="errorMessage">
+                        {{ errorMessage }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Choose Spreadsheet (.xlsx, .xls, .csv)</label>
+                        <input type="file" id="excelFileInput" class="form-control" accept=".xlsx,.xls,.csv">
+                    </div>
+
+                    <button class="btn w-100 fw-semibold"
+                            ng-class="importType === 'renewals' ? 'btn-success' : 'btn-primary'"
+                            ng-click="uploadExcel()"
+                            ng-disabled="uploading">
+                        <span ng-if="!uploading">
+                            <i class="bi bi-cloud-arrow-up-fill me-1"></i>
+                            Upload & Process {{ importType === 'renewals' ? 'Renewals' : 'Birthdays' }}
+                        </span>
+                        <span ng-if="uploading">Processing with Python...</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-7">
+            <!-- Import Result Summary & Error Report -->
+            <div class="card border-0 shadow-sm mb-4" ng-if="importResult">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">Import Summary: {{ importResult.summary.file_name }}</h6>
+                    <span class="badge" ng-class="importResult.summary.import_type === 'renewals' ? 'bg-success' : 'bg-primary'">
+                        {{ importResult.summary.import_type | uppercase }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-2 mb-3">
+                        <div class="col-3">
+                            <div class="p-2 bg-light rounded">
+                                <div class="small text-muted">Total</div>
+                                <div class="fw-bold fs-5">{{ importResult.summary.total_rows }}</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 bg-success bg-opacity-10 text-success rounded">
+                                <div class="small">Imported</div>
+                                <div class="fw-bold fs-5">{{ importResult.summary.imported_count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 bg-warning bg-opacity-10 text-warning-emphasis rounded">
+                                <div class="small">Updated / Dup</div>
+                                <div class="fw-bold fs-5">{{ importResult.summary.duplicate_count }}</div>
+                            </div>
+                        </div>
+                        <div class="col-3">
+                            <div class="p-2 bg-danger bg-opacity-10 text-danger rounded">
+                                <div class="small">Invalid</div>
+                                <div class="fw-bold fs-5">{{ importResult.summary.failed_count }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div ng-if="importResult.errors.length > 0">
+                        <h6 class="fw-bold text-danger small mb-2">Skipped / Error Row Report:</h6>
+                        <div class="table-responsive" style="max-height: 260px;">
+                            <table class="table table-sm table-bordered small mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Row #</th>
+                                        <th>Name</th>
+                                        <th>Mobile</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="e in importResult.errors">
+                                        <td>{{ e.row }}</td>
+                                        <td>{{ e.name }}</td>
+                                        <td>{{ e.mobile }}</td>
+                                        <td class="text-danger">{{ e.reason }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Import History -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="fw-bold mb-0">Recent Import History</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>File</th>
+                                    <th>Type</th>
+                                    <th>Imported</th>
+                                    <th>Updated</th>
+                                    <th>Failed</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ng-if="logs.length === 0">
+                                    <td colspan="6" class="text-center py-3 text-muted small">No Excel imports recorded yet.</td>
+                                </tr>
+                                <tr ng-repeat="l in logs">
+                                    <td class="small fw-semibold">{{ l.file_name }}</td>
+                                    <td>
+                                        <span class="badge" ng-class="l.import_type === 'renewals' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-primary-subtle text-primary border border-primary-subtle'">
+                                            {{ l.import_type }}
+                                        </span>
+                                    </td>
+                                    <td><span class="badge bg-success">{{ l.imported_count }}</span></td>
+                                    <td><span class="badge bg-warning text-dark">{{ l.duplicate_count }}</span></td>
+                                    <td><span class="badge bg-danger">{{ l.failed_count }}</span></td>
+                                    <td class="small text-muted">{{ l.imported_at }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

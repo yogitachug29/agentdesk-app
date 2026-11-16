@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="agentDeskApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1A3673">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>AgentDesk | Client &amp; Birthday CRM</title>
+
+    <!-- Bootstrap 5.3.3 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <!-- Custom Theme & PWA Manifest -->
+    <link href="assets/css/style.css?v=5" rel="stylesheet">
+    <link rel="manifest" href="manifest.php">
+    <link rel="icon" type="image/png" href="assets/images/icon-192.png?v=2">
+    <link rel="apple-touch-icon" href="assets/images/icon-192.png?v=2">
+</head>
+<body ng-controller="MainController">
+
+    <!-- Top Navigation Bar (Visible ONLY when logged in) -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-brand-navy sticky-top" ng-if="auth.isAuthenticated" ng-cloak>
+        <div class="container-fluid px-3 px-lg-4">
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="#!/dashboard">
+                <img src="assets/images/star_health_bg.jpg" alt="Star Health" height="28" class="me-2 rounded bg-white px-1"> AgentDesk
+            </a>
+
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-lg-1">
+                    <li class="nav-item">
+                        <a class="nav-link" ng-class="{active: isActive('/dashboard')}" href="#!/dashboard" ng-click="closeMobileMenu()">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" ng-class="{active: isActive('/customers')}" href="#!/customers" ng-click="closeMobileMenu()">
+                            <i class="bi bi-people-fill me-1"></i> Customers
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" ng-class="{active: isActive('/import')}" href="#!/import" ng-click="closeMobileMenu()">
+                            <i class="bi bi-file-earmark-excel-fill me-1"></i> Excel Import
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" ng-class="{active: isActive('/settings')}" href="#!/settings" ng-click="closeMobileMenu()">
+                            <i class="bi bi-gear-fill me-1"></i> Reports &amp; Settings
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="d-flex align-items-center gap-3 text-white">
+                    <span class="small d-none d-md-inline">
+                        <i class="bi bi-person-circle me-1"></i> {{ auth.agent.full_name }}
+                    </span>
+                    <button class="btn btn-outline-light btn-sm" ng-click="logout()">
+                        <i class="bi bi-box-arrow-right me-1"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main AngularJS View Container -->
+    <main class="container-fluid px-3 px-lg-4 py-4">
+        <div ng-view></div>
+    </main>
+
+    <!-- Floating Client Lookup & Renewal Assistant Chatbot (Visible ONLY when logged in) -->
+    <div class="agent-chat-box" ng-if="auth.isAuthenticated && chatOpen" ng-cloak>
+        <div class="navbar-brand-navy text-white px-3 py-2 d-flex justify-content-between align-items-center">
+            <span class="fw-semibold small"><i class="bi bi-robot me-1"></i> Client &amp; Policy Assistant</span>
+            <button type="button" class="btn-close btn-close-white btn-sm" ng-click="toggleChat()"></button>
+        </div>
+        <div class="agent-chat-messages" id="agentChatScroll">
+            <div ng-repeat="m in chatMessages track by $index"
+                 ng-class="m.sender === 'user' ? 'chat-bubble-user' : 'chat-bubble-bot'">
+                {{ m.text }}
+            </div>
+        </div>
+        <div class="p-2 border-top bg-white d-flex gap-1">
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="Name, Mobile, Policy No (or + 'done')"
+                   ng-model="chat.text"
+                   ng-keypress="handleChatKeypress($event)"
+                   ng-disabled="chatSending">
+            <button type="button" class="btn btn-navy btn-sm px-3"
+                    ng-click="sendChatMessage()"
+                    ng-disabled="chatSending">
+                <i class="bi bi-send-fill"></i>
+            </button>
+        </div>
+    </div>
+
+    <button type="button" class="btn agent-chat-toggle fw-semibold"
+            ng-if="auth.isAuthenticated" ng-cloak
+            ng-click="toggleChat()">
+        <i class="bi bi-chat-dots-fill me-1"></i> Agent Assistant
+    </button>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AngularJS 1.8.3 & ngRoute -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.3/angular-route.min.js"></script>
+
+    <!-- App & Controllers (Exact Case-Matched for Linux/InfinityFree Servers) -->
+    <script src="assets/js/app.js?v=8"></script>
+    <script src="assets/js/Controllers/AuthController.js?v=6"></script>
+    <script src="assets/js/Controllers/DashboardController.js?v=10"></script>
+    <script src="assets/js/Controllers/Customercontroller.js?v=6"></script>
+    <script src="assets/js/Controllers/ImportController.js?v=5"></script>
+    <script src="assets/js/Controllers/SettingsController.js?v=5"></script>
+
+    <!-- PWA Service Worker & Daily Push Check -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+        fetch('api/daily_push.php').catch(() => {});
+    </script>
+
+</body>
+</html>
