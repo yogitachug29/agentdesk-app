@@ -1,26 +1,20 @@
-const CACHE_NAME = 'agentdesk-v10';
-
-self.addEventListener('install', (event) => {
+self.addEventListener('install', function(event) {
     self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then((keys) =>
-            Promise.all(keys.map((key) => caches.delete(key)))
-        ).then(() => self.clients.claim())
-    );
+self.addEventListener('activate', function(event) {
+    event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', (event) => {
-    if (event.request.method !== 'GET') return;
+self.addEventListener('fetch', function(event) {
+    if (event.request.method !== 'GET' || event.request.url.indexOf('/api/') !== -1) {
+        return;
+    }
     event.respondWith(
-        fetch(event.request)
-            .then((networkResponse) => {
-                const copy = networkResponse.clone();
-                caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-                return networkResponse;
-            })
-            .catch(() => caches.match(event.request))
+        fetch(event.request).catch(function() {
+            return caches.match(event.request).then(function(cached) {
+                return cached || new Response('Offline', { status: 503, statusText: 'Offline' });
+            });
+        })
     );
 });
